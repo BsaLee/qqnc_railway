@@ -217,10 +217,12 @@ async function main() {
         startSellLoop(60000);  // 每分钟自动出售仓库果实
     });
 
-    // 监听登录失败，自动重新扫码
+    // 监听登录失败，自动重新扫码（仅在首次启动时使用配置文件中的 code 失效时触发）
+    let loginFailureRetried = false;
     setTimeout(async () => {
-        if (!isLoggedIn() && CONFIG.platform === 'qq') {
-            console.log('[登录] 检测到登录失败，正在重新获取二维码...');
+        if (!isLoggedIn() && CONFIG.platform === 'qq' && !loginFailureRetried && !usedQrLogin) {
+            loginFailureRetried = true;
+            console.log('[登录] 检测到配置文件中的 code 无效，正在重新获取二维码...');
             try {
                 const newCode = await getQQFarmCodeByScan();
                 console.log(`[登录] 获取新 code 成功，正在重新连接...`);
@@ -246,7 +248,15 @@ async function main() {
     }, 5000);  // 5秒后检查登录状态
 
     // 监听掉线事件，QQ 平台自动重新扫码登陆
+    let isReconnecting = false;
     networkEvents.on('kickout', async (data) => {
+        // 防止重复处理掉线事件
+        if (isReconnecting) {
+            console.log('[掉线] 已在重新连接中，忽略此次掉线事件');
+            return;
+        }
+        
+        isReconnecting = true;
         console.log('[掉线] 账号掉线，正在重新获取二维码...');
         
         // 停止所有循环
@@ -263,6 +273,7 @@ async function main() {
             // 重新连接
             connect(newCode, async () => {
                 console.log('[掉线] 重新连接成功，重启各功能模块...');
+                isReconnecting = false;  // 重置标志
                 await processInviteCodes();
                 startFarmCheckLoop();
                 startFriendCheckLoop();
@@ -273,10 +284,11 @@ async function main() {
             });
         } catch (err) {
             console.error('[掉线] 重新扫码失败:', err.message);
-            console.log('[掉线] 5秒后重试...');
+            console.log('[掉线] 30秒后重试...');
+            isReconnecting = false;  // 重置标志，允许重试
             setTimeout(() => {
                 networkEvents.emit('kickout', data);
-            }, 5000);
+            }, 30000);  // 改为30秒后重试
         }
     });
 

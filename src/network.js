@@ -70,6 +70,7 @@ let clientSeq = 1;
 let serverSeq = 0;
 let heartbeatTimer = null;
 let pendingCallbacks = new Map();
+let kickoutEmitted = false;  // 防止重复触发 kickout 事件
 
 // ============ 用户状态 (登录后设置) ============
 const userState = {
@@ -187,7 +188,10 @@ function handleMessage(data) {
                         sendWeComNotification(notifyMsg);
                         
                         // 触发重新登陆事件
-                        networkEvents.emit('kickout', { reason: '已在其他地方登录' });
+                        if (!kickoutEmitted) {
+                            kickoutEmitted = true;
+                            networkEvents.emit('kickout', { reason: '已在其他地方登录' });
+                        }
                         
                         // 清理连接
                         cleanup();
@@ -216,7 +220,10 @@ function handleMessage(data) {
                     sendWeComNotification(notifyMsg);
                     
                     // 触发重新登陆事件
-                    networkEvents.emit('kickout', { reason: '已在其他地方登录' });
+                    if (!kickoutEmitted) {
+                        kickoutEmitted = true;
+                        networkEvents.emit('kickout', { reason: '已在其他地方登录' });
+                    }
                     
                     // 清理连接
                     cleanup();
@@ -257,7 +264,10 @@ function handleNotify(msg) {
             } catch (e) { }
             
             // 触发重新登陆事件
-            networkEvents.emit('kickout', { reason: '被踢下线' });
+            if (!kickoutEmitted) {
+                kickoutEmitted = true;
+                networkEvents.emit('kickout', { reason: '被踢下线' });
+            }
             
             // 清理连接
             cleanup();
@@ -550,7 +560,10 @@ function connect(code, onLoginSuccess) {
             console.log('[WS] 异常断开，正在触发重新登陆...');
             const notifyMsg = `【QQ农场脚本】\n⚠️ 连接已断开\n用户: ${userState.name || '未知'}\n关闭码: ${code}\n时间: ${new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' })}\n正在重新获取登陆二维码...`;
             sendWeComNotification(notifyMsg);
-            networkEvents.emit('kickout', { reason: '连接断开' });
+            if (!kickoutEmitted) {
+                kickoutEmitted = true;
+                networkEvents.emit('kickout', { reason: '连接断开' });
+            }
         } else {
             // 微信平台或正常关闭，发送通知并停止
             const notifyMsg = `【QQ农场脚本】\n连接已断开\n用户: ${userState.name || '未知'}\n关闭码: ${code}\n时间: ${new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' })}\n脚本已停止运行`;
@@ -568,6 +581,7 @@ function connect(code, onLoginSuccess) {
 function cleanup() {
     if (heartbeatTimer) { clearInterval(heartbeatTimer); heartbeatTimer = null; }
     pendingCallbacks.clear();
+    kickoutEmitted = false;  // 重置标志，允许下次重新连接时再次触发 kickout 事件
 }
 
 function getWs() { return ws; }
