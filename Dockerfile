@@ -22,9 +22,6 @@ COPY . .
 # 创建配置文件目录（如果不存在）
 RUN mkdir -p /app/config
 
-# 暴露配置文件为卷（可选）
-VOLUME ["/app/config"]
-
 # 设置环境变量
 ENV NODE_ENV=production
 ENV TZ=Asia/Shanghai
