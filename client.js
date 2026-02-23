@@ -92,6 +92,20 @@ function parseArgs(args) {
             CONFIG.friendCheckInterval = Math.max(sec, 1) * 1000;  // 最低1秒
         }
     }
+    
+    // 从环境变量读取登录凭证（优先级低于命令行参数）
+    if (!options.code) {
+        if (process.env.QQ_CODE) {
+            options.code = process.env.QQ_CODE;
+            CONFIG.platform = 'qq';
+            console.log('[环境变量] 使用 QQ_CODE');
+        } else if (process.env.WX_CODE) {
+            options.code = process.env.WX_CODE;
+            CONFIG.platform = 'wx';
+            console.log('[环境变量] 使用 WX_CODE');
+        }
+    }
+    
     return options;
 }
 
@@ -101,8 +115,10 @@ async function main() {
     let usedQrLogin = false;
 
     // 加载用户配置
+    console.log('[启动] 正在加载配置...');
     loadUserConfig();
     const loginConfig = getLoginConfig();
+    console.log(`[启动] 配置加载完成，平台: ${loginConfig.platform}, 有QQ Code: ${!!loginConfig.qqCode}, 有WX Code: ${!!loginConfig.wxCode}`);
 
     // 加载 proto 定义
     await loadProto();
