@@ -14,12 +14,13 @@
 const { CONFIG } = require('./src/config');
 const { loadUserConfig, getLoginConfig } = require('./src/userConfig');
 const { loadProto } = require('./src/proto');
-const { connect, cleanup, getWs } = require('./src/network');
+const { connect, cleanup, getWs, isLoggedIn } = require('./src/network');
 const { startFarmCheckLoop, stopFarmCheckLoop } = require('./src/farm');
 const { startFriendCheckLoop, stopFriendCheckLoop } = require('./src/friend');
 const { initTaskSystem, cleanupTaskSystem } = require('./src/task');
 const { initStatusBar, cleanupStatusBar, setStatusPlatform } = require('./src/status');
 const { startSellLoop, stopSellLoop, debugSellFruits } = require('./src/warehouse');
+const { startHourlyNotify, stopHourlyNotify } = require('./src/hourlyNotify');
 const { processInviteCodes } = require('./src/invite');
 const { verifyMode, decodeMode } = require('./src/decode');
 const { emitRuntimeHint, sleep } = require('./src/utils');
@@ -202,11 +203,40 @@ async function main() {
         startFarmCheckLoop();
         startFriendCheckLoop();
         initTaskSystem();
+        startHourlyNotify();
         
         // 启动时立即检查一次背包
         setTimeout(() => debugSellFruits(), 5000);
         startSellLoop(60000);  // 每分钟自动出售仓库果实
     });
+
+    // 监听登录失败，自动重新扫码
+    setTimeout(async () => {
+        if (!isLoggedIn() && CONFIG.platform === 'qq') {
+            console.log('[登录] 检测到登录失败，正在重新获取二维码...');
+            try {
+                const newCode = await getQQFarmCodeByScan();
+                console.log(`[登录] 获取新 code 成功，正在重新连接...`);
+                cleanup();
+                const ws = getWs();
+                if (ws) ws.close();
+                
+                // 重新连接
+                connect(newCode, async () => {
+                    await processInviteCodes();
+                    startFarmCheckLoop();
+                    startFriendCheckLoop();
+                    initTaskSystem();
+                    startHourlyNotify();
+                    setTimeout(() => debugSellFruits(), 5000);
+                    startSellLoop(60000);
+                });
+            } catch (err) {
+                console.error('[登录] 重新扫码失败:', err.message);
+                process.exit(1);
+            }
+        }
+    }, 5000);  // 5秒后检查登录状态
 
     // 退出处理
     process.on('SIGINT', () => {
@@ -215,6 +245,7 @@ async function main() {
         stopFarmCheckLoop();
         stopFriendCheckLoop();
         cleanupTaskSystem();
+        stopHourlyNotify();
         stopSellLoop();
         cleanup();
         const ws = getWs();

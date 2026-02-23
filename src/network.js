@@ -556,8 +556,10 @@ function cleanup() {
 
 function getWs() { return ws; }
 
+function isLoggedIn() { return userState.gid > 0; }
+
 module.exports = {
-    connect, cleanup, getWs,
+    connect, cleanup, getWs, isLoggedIn,
     sendMsg, sendMsgAsync,
     getUserState,
     networkEvents,

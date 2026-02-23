@@ -1,5 +1,6 @@
 const axios = require('axios');
 const qrcodeTerminal = require('qrcode-terminal');
+const { getNotificationConfig } = require('./userConfig');
 
 const CHROME_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
 const QUA = 'V1_HT5_QDT_0.70.2209190_x64_0_DEV_D';
@@ -70,12 +71,51 @@ function printQr(url) {
     console.log('');
 }
 
+/**
+ * 通过企业微信发送二维码
+ */
+async function sendQrToWecom(url) {
+    const notifyConfig = getNotificationConfig();
+    
+    // 检查是否启用通知
+    if (!notifyConfig.enabled || !notifyConfig.wecomWebhook) {
+        console.log('[扫码登录] 企业微信未配置，跳过发送二维码');
+        return;
+    }
+
+    const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(url)}`;
+    
+    const payload = {
+        msgtype: 'news',
+        news: {
+            articles: [
+                {
+                    title: 'QQ农场脚本 - 登录二维码',
+                    description: '请用 QQ 扫描下方二维码确认登录，3分钟内有效',
+                    url: qrImageUrl,
+                    picurl: qrImageUrl
+                }
+            ]
+        }
+    };
+
+    try {
+        await axios.post(notifyConfig.wecomWebhook, payload);
+        console.log('[扫码登录] 二维码已发送到企业微信');
+    } catch (err) {
+        console.error('[扫码登录] 企业微信发送失败:', err.message);
+    }
+}
+
 async function getQQFarmCodeByScan(options = {}) {
     const pollIntervalMs = Number(options.pollIntervalMs) > 0 ? Number(options.pollIntervalMs) : 2000;
     const timeoutMs = Number(options.timeoutMs) > 0 ? Number(options.timeoutMs) : 180000;
 
     const { loginCode, url } = await requestLoginCode();
     printQr(url);
+    
+    // 发送二维码到企业微信
+    await sendQrToWecom(url);
 
     const start = Date.now();
     while (Date.now() - start < timeoutMs) {
