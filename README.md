@@ -1,252 +1,411 @@
-# 紧急通知：已经有人反馈封号了 低调使用，被举报必封
-## 一些提醒：某些人嘴脸不要那么难看，直接拿我原版的程序去倒卖
-# QQ经典农场 挂机脚本
+# QQ 农场挂机脚本
 
-基于 Node.js 的 QQ/微信 经典农场小程序自动化挂机脚本。通过分析小程序 WebSocket 通信协议（Protocol Buffers），实现全自动农场管理。
-本脚本基于ai制作，必然有一定的bug，遇到了建议自己克服一下，后续不一定会更新了
+一个功能完整的 QQ 农场自动化脚本，支持自动收获、种植、巡查好友、领取任务等功能。支持 QQ 和微信两个平台，可通过 Docker 轻松部署。
 
-## 功能特性
+## ✨ 功能特性
 
-### 自己农场
-- **自动收获** — 检测成熟作物并自动收获
-- **自动铲除** — 自动铲除枯死/收获后的作物残留
-- **自动种植** — 收获/铲除后自动购买种子并种植（默认按当前等级 + 已解锁土地数计算经验效率后选种；可配置强制最低等级作物）
-- **自动施肥** — 种植后自动施放普通肥料加速生长
-- **自动除草** — 检测并清除杂草
-- **自动除虫** — 检测并消灭害虫
-- **自动浇水** — 检测缺水作物并浇水
-- **自动出售** — 每分钟自动出售仓库中的果实
+### 核心功能
+- ✅ **自动收获** - 自动收获成熟作物
+- ✅ **自动种植** - 收获后自动购买种子并种植
+- ✅ **自动施肥** - 自动给作物施肥
+- ✅ **自动除草/除虫** - 自动清理农场
+- ✅ **自动铲除** - 铲除枯死作物
+- ✅ **自动出售** - 每分钟自动出售仓库果实
 
-### 好友农场
-- **好友巡查** — 自动巡查好友农场
-- **帮忙操作** — 帮好友浇水/除草/除虫
-- **自动偷菜** — 偷取好友成熟作物
+### 好友功能
+- ✅ **自动巡查好友** - 帮忙浇水、除草、除虫
+- ✅ **自动偷菜** - 自动从好友农场偷菜
+- ✅ **好友黑名单** - 支持指定不巡查的好友
+- ✅ **自动同意好友申请** - 微信环境自动同意好友申请
 
-### 系统功能
-- **自动领取任务** — 自动领取完成的任务奖励，支持分享翻倍/三倍奖励
-- **自动同意好友** — 微信同玩好友申请自动同意（支持推送实时响应）
-- **邀请码处理** — 启动时自动处理 share.txt 中的邀请链接（微信环境，share.txt有示例，是小程序的path）
-- **状态栏显示** — 终端顶部固定显示平台/昵称/等级/经验/金币
-- **经验进度** — 显示当前等级经验进度
-- **心跳保活** — 自动维持 WebSocket 连接
+### 任务系统
+- ✅ **自动领取任务** - 自动领取完成的任务奖励
+- ✅ **分享翻倍** - 支持分享翻倍/三倍奖励
+- ✅ **自动降级** - 分享翻倍失败自动降级为普通领取
 
-### 开发工具
-- **[PB 解码工具](#pb-解码工具)** — 内置 Protobuf 数据解码器，方便调试分析
-- **[经验分析工具](#经验分析工具)** — 分析作物经验效率，计算最优种植策略
+### 通知功能
+- ✅ **企业微信通知** - 登录成功、掉线等事件推送
+- ✅ **实时日志** - 详细的操作日志输出
 
-## 安装
+### 部署方式
+- ✅ **Docker 支持** - 一键 Docker 部署
+- ✅ **环境变量配置** - 灵活的环境变量支持
+- ✅ **多账号部署** - 支持同时运行多个账号
+
+## 🚀 快速开始
+
+### 前置要求
+
+- Node.js 18+ 或 Docker
+- QQ/微信小程序登录 code
+- （可选）企业微信机器人 webhook
+
+### 本地运行
+
+#### 1. 克隆项目
 
 ```bash
-git clone https://github.com/linguo2625469/qq-farm-bot.git
+git clone https://github.com/yourusername/qq-farm-bot.git
 cd qq-farm-bot
+```
+
+#### 2. 安装依赖
+
+```bash
 npm install
 ```
 
-## 使用
-
-### 获取登录 Code
-
-你需要从小程序中抓取 code。可以通过抓包工具（如 Fiddler、Charles、mitmproxy 等）获取 WebSocket 连接 URL 中的 `code` 参数。
-
-现已支持qq端扫码登录获取code后自动登录，wx不会支持，不需要再提问（wx无此类漏洞）
-[lkeme/QRLib](https://github.com/lkeme/QRLib) - 扫码登录使用此项目代码，非常感谢。
-
-### 启动挂机
+#### 3. 配置文件
 
 ```bash
-# QQ小程序 (无任何参数默认qq平台且使用二维码登录)
-node client.js
+# 复制配置文件模板
+cp config.example.json config.json
 
-# QQ小程序 (默认)
-node client.js --code <你的登录code>
-
-# 微信小程序
-node client.js --code <你的登录code> --wx
+# 编辑配置文件
+# 填写你的登录 code、平台、webhook 等信息
 ```
+
+#### 4. 运行脚本
+
+```bash
+# QQ 平台
+node client.js --code your_qq_code
+
+# 微信平台
+node client.js --code your_wx_code --wx
+
+# 使用配置文件（无需传 code）
+node client.js
+```
+
+### Docker 运行
+
+#### 快速启动（推荐）
+
+**Windows:**
+```cmd
+docker-run.bat
+```
+
+**Linux/Mac:**
+```bash
+chmod +x docker-run.sh
+./docker-run.sh
+```
+
+#### 手动 Docker 命令
+
+```bash
+# 构建镜像
+docker build -t qq-farm:latest .
+
+# 运行容器
+docker run -d --name qq-farm-bot --restart unless-stopped \
+  -e QQ_CODE=your_code \
+  -e PLATFORM=qq \
+  -e WECOM_WEBHOOK=https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=xxx \
+  -e FRIEND_BLACKLIST=1118181882,987654321 \
+  -e TZ=Asia/Shanghai \
+  qq-farm:latest
+
+# 查看日志
+docker logs -f qq-farm-bot
+```
+
+#### Docker Compose
+
+```bash
+# 使用配置文件
+docker-compose up -d
+
+# 使用环境变量
+docker-compose -f docker-compose.env.yml up -d
+```
+
+## 📋 配置说明
+
+### config.json 配置
+
+```json
+{
+  "login": {
+    "wxCode": "微信登录code",
+    "qqCode": "QQ登录code",
+    "platform": "qq"
+  },
+  
+  "notification": {
+    "wecomWebhook": "企业微信机器人地址",
+    "enabled": true
+  },
+  
+  "friend": {
+    "blacklist": [1118181882, "好友名字"],
+    "disableAllFriendCheck": false
+  },
+  
+  "invite": {
+    "links": ["?uid=xxx&openid=xxx&share_source=xxx"]
+  }
+}
+```
+
+### 环境变量配置
+
+支持通过环境变量覆盖配置文件（优先级更高）：
+
+| 环境变量 | 说明 | 示例 |
+|---------|------|------|
+| `QQ_CODE` | QQ 登录 code | `QQ_CODE=your_code` |
+| `WX_CODE` | 微信登录 code | `WX_CODE=your_code` |
+| `PLATFORM` | 平台选择 | `PLATFORM=qq` 或 `wx` |
+| `WECOM_WEBHOOK` | 企业微信机器人 | `WECOM_WEBHOOK=https://...` |
+| `NOTIFICATION_ENABLED` | 启用通知 | `NOTIFICATION_ENABLED=true` |
+| `FRIEND_BLACKLIST` | 好友黑名单 | `FRIEND_BLACKLIST=1118181882,987654321` |
+| `DISABLE_ALL_FRIEND_CHECK` | 禁用所有好友巡查 | `DISABLE_ALL_FRIEND_CHECK=true` |
+
+详见 [ENV_VARIABLES.md](ENV_VARIABLES.md)
+
+## 🎮 使用示例
+
+### 基础用法
+
+```bash
+# QQ 平台，自动巡查
+node client.js --code your_qq_code
+
+# 微信平台，自动巡查
+node client.js --code your_wx_code --wx
+
+# 自定义巡查间隔（秒）
+node client.js --code your_code --interval 30 --friend-interval 5
+```
+
+### 好友黑名单
+
+```bash
+# 拉黑指定好友
+docker run -d --name qq-farm-bot \
+  -e QQ_CODE=your_code \
+  -e FRIEND_BLACKLIST=1118181882,987654321 \
+  br00wn/qq-farm:latest
+
+# 禁用所有好友巡查
+docker run -d --name qq-farm-bot \
+  -e QQ_CODE=your_code \
+  -e FRIEND_BLACKLIST=all \
+  br00wn/qq-farm:latest
+```
+
+### 企业微信通知
+
+```bash
+docker run -d --name qq-farm-bot \
+  -e QQ_CODE=your_code \
+  -e WECOM_WEBHOOK=https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=xxx \
+  -e NOTIFICATION_ENABLED=true \
+  br00wn/qq-farm:latest
+```
+
+### 多账号部署
+
+```yaml
+version: '3.8'
+
+services:
+  qq-farm-1:
+    image: br00wn/qq-farm:latest
+    environment:
+      - QQ_CODE=账号1的code
+      - PLATFORM=qq
+      - FRIEND_BLACKLIST=1118181882
+
+  qq-farm-2:
+    image: br00wn/qq-farm:latest
+    environment:
+      - QQ_CODE=账号2的code
+      - PLATFORM=qq
+      - FRIEND_BLACKLIST=all
+```
+
+## 📊 日志输出示例
+
+```
+[启动] QQ code=0c3rkhll... 农场1s 好友10s
+========== 登录成功 ==========
+  GID:    123456789
+  昵称:   张三
+  等级:   25
+  金币:   12345
+===============================
+
+[巡田] 检查完成: 收获3 种植3 施肥2
+[好友] 巡查 5 人 → 偷6/除草2/浇水1
+[任务] 发现 2 个可领取任务
+[任务] ✓ 完成1次收获 → 金币1800/点券20
+[仓库] 出售完成，共获得 100 金币
+```
+
+## 🔧 命令行参数
+
+```bash
+node client.js [选项]
+
+选项:
+  --code <code>              登录 code（必需，或在 config.json 中配置）
+  --qr                       QQ 平台扫码登录
+  --wx                       使用微信平台（默认为 QQ）
+  --interval <秒>            自己农场巡查间隔（默认 10 秒）
+  --friend-interval <秒>     好友巡查间隔（默认 1 秒）
+  --verify                   验证 proto 定义
+  --decode <数据>            解码 PB 数据
+```
+
+## 🐳 Docker 相关
+
+### 构建镜像
+
+```bash
+docker build -t qq-farm:latest .
+```
+
+### 推送到 Docker Hub
+
+```bash
+# 登录
+docker login
+
+# 打标签
+docker tag qq-farm:latest yourusername/qq-farm:latest
+
+# 推送
+docker push yourusername/qq-farm:latest
+```
+
+### 常用 Docker 命令
+
+```bash
+# 查看日志
+docker logs -f qq-farm-bot
+
+# 停止容器
+docker stop qq-farm-bot
+
+# 启动容器
+docker start qq-farm-bot
+
+# 重启容器
+docker restart qq-farm-bot
+
+# 删除容器
+docker rm -f qq-farm-bot
+```
+
+详见 [DOCKER.md](DOCKER.md)
+
+## 📝 配置文件说明
+
+### share.txt（邀请链接）
+
+仅微信环境有效，格式：
+
+```
+?uid=123456&openid=oABCD1234567890&share_source=1&doc_id=abc123
+?uid=789012&openid=oXYZ9876543210&share_source=2&doc_id=def456
+```
+
+启动时会自动处理这些邀请链接。
+
+### .env 文件
+
+用于 Docker 环境变量配置，详见 [.env.example](.env.example)
+
+## ⚙️ 高级配置
 
 ### 自定义巡查间隔
 
 ```bash
-# 农场巡查间隔 5 秒，好友巡查间隔 2 秒
-node client.js --code <code> --interval 5 --friend-interval 2
+# 农场 30 秒巡查一次，好友 5 秒巡查一次
+node client.js --code your_code --interval 30 --friend-interval 5
 ```
 
-### 参数说明
-
-| 参数 | 说明 | 默认值 |
-|------|------|--------|
-| `--code` | 小程序登录凭证（**必需**） | — |
-| `--wx` | 使用微信登录 | QQ 小程序 |
-| `--interval` | 自己农场巡查间隔（秒） | 2 |
-| `--friend-interval` | 好友巡查间隔（秒） | 1 |
-| `--verify` | 验证 proto 定义是否正确 | — |
-| `--decode` | 进入 PB 数据解码模式 | — |
-
-### 邀请码功能（微信环境）
-
-在项目根目录创建 `share.txt` 文件，每行一个邀请链接：
-
-```
-?uid=123&openid=xxx&share_source=4&doc_id=2
-?uid=456&openid=xxx&share_source=4&doc_id=2
-```
-
-启动时会自动处理这些邀请链接，申请添加好友。处理完成后文件会被清空。
-
-### PB 解码工具
-
-内置 Protobuf 数据解码器，支持自动推断消息类型：
+### 调试模式
 
 ```bash
-# 解码 base64 格式的 gatepb.Message
-node client.js --decode CigKGWdhbWVwYi... --gate
-
-# 解码 hex 格式，指定消息类型
-node client.js --decode 0a1c0a19... --hex --type gatepb.Message
-
-# 查看解码工具详细帮助
-node client.js --decode
+# 查看指定好友的详细信息
+# 在 src/friend.js 中修改 DEBUG_FRIEND_LANDS 变量
 ```
 
-### 经验分析工具
-
- * 规则：
- * 1) 每次收获经验 = exp，铲地固定 +1 经验 => 单轮经验 = exp + 1
- * 2) 种植速度：
- *    - 不施肥：2 秒种 18 块地 => 9 块/秒
- *    - 普通肥：2 秒种 12 块地 => 6 块/秒
- * 3) 普通肥：减少 20% 生长时间；若 20% < 30 秒，则固定减少 30 秒
- */
+### 禁用功能
 
 ```bash
-node tools/calc-exp-yield.js
-node tools/calc-exp-yield.js --lands 18 --level 27
-node tools/calc-exp-yield.js --input tools/seed-shop-merged-export.json
+# 禁用所有好友巡查
+DISABLE_ALL_FRIEND_CHECK=true
+
+# 禁用企业微信通知
+NOTIFICATION_ENABLED=false
 ```
 
-### 当前种子选择逻辑
+## 🔐 安全建议
 
-默认策略（`src/farm.js`）：
-1. 拉取商店中当前可购买的种子（已解锁、满足等级、未超限购）。
-2. 读取账号等级 + 已解锁土地块数，调用 `tools/calc-exp-yield.js` 的 `getPlantingRecommendation(level, lands)`。
-3. 按普通肥经验效率排名，从高到低选择在商店可买到的第一个种子。
-4. 若推荐失败，则走兜底排序逻辑。
+1. **不要分享 config.json** - 包含登录凭证
+2. **使用私有 Docker 仓库** - 如果镜像包含敏感信息
+3. **定期更新 code** - code 有有效期
+4. **使用环境变量** - 比配置文件更安全
+5. **监控日志** - 及时发现异常
 
-强制最低等级作物（通常白萝卜）：
-- 在 `src/config.js` 设置 `forceLowestLevelCrop: true` 后，直接选择最低等级种子。
-- 开启后不再执行经验效率分析推荐。
+## 🐛 故障排查
 
-## 项目结构
-
-<details>
-<summary>点击展开项目结构</summary>
+### 连接失败
 
 ```
-├── client.js              # 入口文件 - 参数解析与启动调度
-├── src/
-│   ├── config.js          # 配置常量与生长阶段枚举
-│   ├── utils.js           # 工具函数 (类型转换/日志/时间同步/sleep)
-│   ├── proto.js           # Protobuf 加载与消息类型管理
-│   ├── network.js         # WebSocket 连接/消息编解码/登录/心跳
-│   ├── farm.js            # 自己农场: 收获/浇水/除草/除虫/铲除/种植/施肥
-│   ├── friend.js          # 好友农场: 进入/帮忙/偷菜/巡查循环
-│   ├── task.js            # 任务系统: 自动领取任务奖励
-│   ├── status.js          # 状态栏: 终端顶部固定显示用户状态
-│   ├── warehouse.js       # 仓库系统: 自动出售果实
-│   ├── invite.js          # 邀请码处理: 自动申请好友
-│   ├── gameConfig.js      # 游戏配置: 等级经验表/植物数据
-│   └── decode.js          # PB 解码/验证工具模式
-├── proto/                 # Protobuf 消息定义
-│   ├── game.proto         # 网关消息定义 (gatepb)
-│   ├── userpb.proto       # 用户/登录/心跳消息
-│   ├── plantpb.proto      # 农场/土地/植物消息
-│   ├── corepb.proto       # 通用 Item 消息
-│   ├── shoppb.proto       # 商店消息
-│   ├── friendpb.proto     # 好友列表/申请消息
-│   ├── visitpb.proto      # 好友农场拜访消息
-│   ├── notifypb.proto     # 服务器推送通知消息
-│   ├── taskpb.proto       # 任务系统消息
-│   └── itempb.proto       # 背包/仓库/物品消息
-├── gameConfig/            # 游戏配置数据
-│   ├── RoleLevel.json     # 等级经验表
-│   └── Plant.json         # 植物数据（名称/生长时间/经验等）
-├── tools/                 # 辅助工具
-│   └── analyze-exp-*.js   # 经验效率分析脚本
-└── package.json
+[WS] 错误: unable to verify the first certificate
 ```
 
-</details>
+**解决方案：** 这是 SSL 证书验证问题，已在 Dockerfile 中处理，无需手动干预。
 
-## 运行示例
-
-<details>
-<summary>点击展开运行示例</summary>
+### 任务领取失败
 
 ```
-QQ | 我的农场 | Lv24 125/500 | 金币:88888
-────────────────────────────────────────────
-
-========== 登录成功 ==========
-  GID:    1234567890
-  昵称:   我的农场
-  等级:   24
-  金币:   88888
-  时间:   2026/2/7 16:00:00
-===============================
-
-[16:00:02] [农场] [收:15 长:0] → 收获15/种植15
-[16:00:03] [施肥] 已为 15/15 块地施肥
-[16:00:05] [农场] [草:2 虫:1 水:3 长:15] → 除草2/除虫1/浇水3
-[16:00:08] [好友] 小明: 偷6(白萝卜)
-[16:00:10] [好友] 巡查 5 人 → 偷12/除草3/浇水2
-[16:00:15] [仓库] 出售 2 种果实共 300 个，获得 600 金币
-[16:00:20] [任务] 领取: 收获5次 → 金币500/经验100
-
-# 微信同玩好友申请自动同意：
-[16:05:30] [申请] 收到 1 个好友申请: 小绿
-[16:05:31] [申请] 已同意 1 人: 小绿
+[任务] ⚠ ✗ 完成1次收获: 任务未完成
 ```
 
-</details>
+**解决方案：** 脚本会自动降级为普通领取，无需处理。
 
-## 配置说明
+### 容器无法启动
 
-### src/config.js
+1. 检查配置文件：`docker logs qq-farm-bot`
+2. 检查网络连接
+3. 重启 Docker：`docker restart qq-farm-bot`
 
-```javascript
-const CONFIG = {
-    serverUrl: 'wss://gate-obt.nqf.qq.com/prod/ws',
-    clientVersion: '1.6.0.14_20251224',
-    platform: 'qq',              // 平台: qq 或 wx
-    os: 'iOS',
-    heartbeatInterval: 25000,    // 心跳间隔 25秒
-    farmCheckInterval: 1000,     // 农场巡查完成后等待间隔
-    friendCheckInterval: 10000,  // 好友巡查完成后等待间隔
-    forceLowestLevelCrop: false, // true: 固定最低等级作物（白萝卜优先），跳过经验效率分析
-};
-```
+详见 [DOCKER.md](DOCKER.md) 的故障排查部分
 
-### src/friend.js
+## 📚 文档
 
-```javascript
-const HELP_ONLY_WITH_EXP = true;      // 只在有经验时帮助好友（已更新可用）
-const ENABLE_PUT_BAD_THINGS = false;  // 是否启用放虫放草功能（暂不可用 必须关闭，否则有严重的话后果）
-```
+- [DOCKER.md](DOCKER.md) - Docker 部署详细指南
+- [ENV_VARIABLES.md](ENV_VARIABLES.md) - 环境变量完整说明
+- [DOCKER_QUICK_START.md](DOCKER_QUICK_START.md) - Docker 快速开始
 
-## 注意事项
+## 🤝 贡献
 
-1. **登录 Code 有效期有限**，过期后需要重新抓取
-2. **请合理设置巡查间隔**，过于频繁可能触发服务器限流
-3. **微信环境**才支持邀请码和好友申请功能
-4. **QQ环境**下code支持多次使用
-5. **WX环境**下code不支持多次使用，请抓包时将code拦截掉
+欢迎提交 Issue 和 Pull Request！
 
-## 免责声明
+## ⚖️ 声明
 
-本项目仅供学习和研究用途。使用本脚本可能违反游戏服务条款，由此产生的一切后果由使用者自行承担。
+本项目开源免费，严禁倒卖。请从公开仓库免费获取。
 
-![Star History Chart](https://api.star-history.com/svg?repos=linguo2625469/qq-farm-bot&type=Date&theme=light)
+## 📄 许可证
 
-## License
+MIT License
 
-MIT
+## 🙏 致谢
+
+感谢所有贡献者和使用者的支持！
+
+---
+
+**最后更新：** 2026-02-14
+
+**项目地址：** https://github.com/yourusername/qq-farm-bot
+
+**问题反馈：** https://github.com/yourusername/qq-farm-bot/issues
