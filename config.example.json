@@ -1,0 +1,34 @@
+{
+  "comment": "QQ农场脚本配置文件示例 - 复制为 config.json 后填写",
+  
+  "login": {
+    "comment": "登录配置 - 填写对应平台的 code",
+    "wxCode": "填写微信小程序登录code",
+    "qqCode": "填写QQ小程序登录code",
+    "platform": "qq 或 wx"
+  },
+  
+  "notification": {
+    "comment": "企业微信机器人通知配置",
+    "wecomWebhook": "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=你的key",
+    "enabled": true
+  },
+  
+  "friend": {
+    "comment": "好友巡查配置",
+    "blacklist": [
+      "示例: 1118181882",
+      "示例: '好友名字'",
+      "填写 'all' 表示不巡查所有好友"
+    ],
+    "disableAllFriendCheck": false
+  },
+  
+  "invite": {
+    "comment": "邀请链接配置（仅微信环境有效，每行一个链接）",
+    "links": [
+      "?uid=123456&openid=oABCD1234567890&share_source=1&doc_id=abc123",
+      "?uid=789012&openid=oXYZ9876543210&share_source=2&doc_id=def456"
+    ]
+  }
+}
