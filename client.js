@@ -14,13 +14,20 @@
 const { CONFIG } = require('./src/config');
 const { loadUserConfig, getLoginConfig } = require('./src/userConfig');
 const { loadProto } = require('./src/proto');
-const { connect, cleanup, getWs, isLoggedIn } = require('./src/network');
+const { connect, cleanup, getWs, isLoggedIn, networkEvents } = require('./src/network');
 const { startFarmCheckLoop, stopFarmCheckLoop } = require('./src/farm');
 const { startFriendCheckLoop, stopFriendCheckLoop } = require('./src/friend');
 const { initTaskSystem, cleanupTaskSystem } = require('./src/task');
 const { initStatusBar, cleanupStatusBar, setStatusPlatform } = require('./src/status');
 const { startSellLoop, stopSellLoop, debugSellFruits } = require('./src/warehouse');
-const { startHourlyNotify, stopHourlyNotify } = require('./src/hourlyNotify');
+let startHourlyNotify, stopHourlyNotify;
+try {
+    ({ startHourlyNotify, stopHourlyNotify } = require('./src/hourlyNotify'));
+} catch (e) {
+    console.log('[警告] hourlyNotify 模块加载失败，跳过定时推送功能');
+    startHourlyNotify = () => {};
+    stopHourlyNotify = () => {};
+}
 const { processInviteCodes } = require('./src/invite');
 const { verifyMode, decodeMode } = require('./src/decode');
 const { emitRuntimeHint, sleep } = require('./src/utils');
@@ -237,6 +244,41 @@ async function main() {
             }
         }
     }, 5000);  // 5秒后检查登录状态
+
+    // 监听掉线事件，QQ 平台自动重新扫码登陆
+    networkEvents.on('kickout', async (data) => {
+        console.log('[掉线] 账号掉线，正在重新获取二维码...');
+        
+        // 停止所有循环
+        stopFarmCheckLoop();
+        stopFriendCheckLoop();
+        cleanupTaskSystem();
+        stopHourlyNotify();
+        stopSellLoop();
+        
+        try {
+            const newCode = await getQQFarmCodeByScan();
+            console.log(`[掉线] 获取新 code 成功，正在重新连接...`);
+            
+            // 重新连接
+            connect(newCode, async () => {
+                console.log('[掉线] 重新连接成功，重启各功能模块...');
+                await processInviteCodes();
+                startFarmCheckLoop();
+                startFriendCheckLoop();
+                initTaskSystem();
+                startHourlyNotify();
+                setTimeout(() => debugSellFruits(), 5000);
+                startSellLoop(60000);
+            });
+        } catch (err) {
+            console.error('[掉线] 重新扫码失败:', err.message);
+            console.log('[掉线] 5秒后重试...');
+            setTimeout(() => {
+                networkEvents.emit('kickout', data);
+            }, 5000);
+        }
+    });
 
     // 退出处理
     process.on('SIGINT', () => {

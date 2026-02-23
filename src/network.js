@@ -173,25 +173,25 @@ function handleMessage(data) {
                 if (errorCode !== 0) {
                     const errorMsg = `${meta.service_name}.${meta.method_name} 错误: code=${errorCode} ${meta.error_message || ''}`;
                     
-                    // 检测到被踢下线，触发退出
+                    // 检测到被踢下线，触发事件而不是退出
                     if (errorCode === 1000014 || (meta.error_message && meta.error_message.includes('已在其他地方登录'))) {
                         console.log('');
                         console.log('========================================');
                         console.log('  检测到账号在其他地方登录');
-                        console.log('  脚本即将退出...');
+                        console.log('  正在触发重新登陆...');
                         console.log('========================================');
                         console.log('');
                         
                         // 发送企业微信通知
-                        const notifyMsg = `【QQ农场脚本】\n检测到账号在其他地方登录\n用户: ${userState.name || '未知'}\n时间: ${new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' })}\n脚本已停止运行`;
+                        const notifyMsg = `【QQ农场脚本】\n⚠️ 检测到账号在其他地方登录\n用户: ${userState.name || '未知'}\n时间: ${new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' })}\n正在重新获取登陆二维码...`;
                         sendWeComNotification(notifyMsg);
                         
-                        // 延迟退出，让日志输出完整
-                        setTimeout(() => {
-                            cleanup();
-                            if (ws) ws.close();
-                            process.exit(0);
-                        }, 1000);
+                        // 触发重新登陆事件
+                        networkEvents.emit('kickout', { reason: '已在其他地方登录' });
+                        
+                        // 清理连接
+                        cleanup();
+                        if (ws) ws.close();
                     }
                     
                     cb(new Error(errorMsg));
@@ -202,24 +202,25 @@ function handleMessage(data) {
             }
 
             if (errorCode !== 0) {
-                // 检测到被踢下线，触发退出
+                // 检测到被踢下线，触发事件而不是退出
                 if (errorCode === 1000014 || (meta.error_message && meta.error_message.includes('已在其他地方登录'))) {
                     console.log('');
                     console.log('========================================');
                     console.log('  检测到账号在其他地方登录');
-                    console.log('  脚本即将退出...');
+                    console.log('  正在触发重新登陆...');
                     console.log('========================================');
                     console.log('');
                     
                     // 发送企业微信通知
-                    const notifyMsg = `【QQ农场脚本】\n检测到账号在其他地方登录\n用户: ${userState.name || '未知'}\n时间: ${new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' })}\n脚本已停止运行`;
+                    const notifyMsg = `【QQ农场脚本】\n⚠️ 检测到账号在其他地方登录\n用户: ${userState.name || '未知'}\n时间: ${new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' })}\n正在重新获取登陆二维码...`;
                     sendWeComNotification(notifyMsg);
                     
-                    setTimeout(() => {
-                        cleanup();
-                        if (ws) ws.close();
-                        process.exit(0);
-                    }, 1000);
+                    // 触发重新登陆事件
+                    networkEvents.emit('kickout', { reason: '已在其他地方登录' });
+                    
+                    // 清理连接
+                    cleanup();
+                    if (ws) ws.close();
                     return;
                 }
                 
@@ -254,6 +255,13 @@ function handleNotify(msg) {
                 const notify = types.KickoutNotify.decode(eventBody);
                 log('推送', `原因: ${notify.reason_message || '未知'}`);
             } catch (e) { }
+            
+            // 触发重新登陆事件
+            networkEvents.emit('kickout', { reason: '被踢下线' });
+            
+            // 清理连接
+            cleanup();
+            if (ws) ws.close();
             return;
         }
 
@@ -537,9 +545,17 @@ function connect(code, onLoginSuccess) {
     ws.on('close', (code, reason) => {
         console.log(`[WS] 连接关闭 (code=${code})`);
         
-        // 发送企业微信通知
-        const notifyMsg = `【QQ农场脚本】\n连接已断开\n用户: ${userState.name || '未知'}\n关闭码: ${code}\n时间: ${new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' })}\n脚本已停止运行`;
-        sendWeComNotification(notifyMsg);
+        // 如果是 QQ 平台且不是正常关闭，触发重新登陆事件
+        if (CONFIG.platform === 'qq' && code !== 1000) {
+            console.log('[WS] 异常断开，正在触发重新登陆...');
+            const notifyMsg = `【QQ农场脚本】\n⚠️ 连接已断开\n用户: ${userState.name || '未知'}\n关闭码: ${code}\n时间: ${new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' })}\n正在重新获取登陆二维码...`;
+            sendWeComNotification(notifyMsg);
+            networkEvents.emit('kickout', { reason: '连接断开' });
+        } else {
+            // 微信平台或正常关闭，发送通知并停止
+            const notifyMsg = `【QQ农场脚本】\n连接已断开\n用户: ${userState.name || '未知'}\n关闭码: ${code}\n时间: ${new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' })}\n脚本已停止运行`;
+            sendWeComNotification(notifyMsg);
+        }
         
         cleanup();
     });
@@ -559,7 +575,7 @@ function getWs() { return ws; }
 function isLoggedIn() { return userState.gid > 0; }
 
 module.exports = {
-    connect, cleanup, getWs, isLoggedIn,
+    connect, cleanup, getWs, isLoggedIn, networkEvents,
     sendMsg, sendMsgAsync,
     getUserState,
     networkEvents,
