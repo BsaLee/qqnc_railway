@@ -4,13 +4,13 @@
   "login": {
     "comment": "登录配置",
     "wxCode": "",
-    "qqCode": "",
-    "platform": "wx"
+    "qqCode": "f79b232975c0eb0699bd8b6263bbe61c",
+    "platform": "qq"
   },
   
   "notification": {
     "comment": "企业微信机器人通知配置",
-    "wecomWebhook": "",
+    "wecomWebhook": "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=4d4c71ce-e835-4df3-b123-9e2482c5c622",
     "enabled": true
   },
   
@@ -29,3 +29,4 @@
     ]
   }
 }
+
