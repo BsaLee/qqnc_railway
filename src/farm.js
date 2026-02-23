@@ -228,7 +228,7 @@ async function findBestSeed(landsCount) {
     }
 
     // 兜底：等级在28级以前还是白萝卜比较好，28级以上选最高等级的种子
-    if(state.level && state.level <= 28){
+    if(state.level && state.level <= 1){
         available.sort((a, b) => a.requiredLevel - b.requiredLevel);
     }else{
         available.sort((a, b) => b.requiredLevel - a.requiredLevel);
